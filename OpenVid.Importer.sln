@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31205.134
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenVid.Importer", "OpenVid.Importer\OpenVid.Importer.csproj", "{EED9C9DB-1DA9-4559-8DA4-C45D881C4632}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Database", "Database\Database.csproj", "{2C2C13F0-9EB7-4885-9EDF-13E2CBC63451}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EED9C9DB-1DA9-4559-8DA4-C45D881C4632}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EED9C9DB-1DA9-4559-8DA4-C45D881C4632}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EED9C9DB-1DA9-4559-8DA4-C45D881C4632}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EED9C9DB-1DA9-4559-8DA4-C45D881C4632}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C2C13F0-9EB7-4885-9EDF-13E2CBC63451}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C2C13F0-9EB7-4885-9EDF-13E2CBC63451}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C2C13F0-9EB7-4885-9EDF-13E2CBC63451}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C2C13F0-9EB7-4885-9EDF-13E2CBC63451}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E139C814-15D0-4E55-8307-7190826E52F4}
+	EndGlobalSection
+EndGlobal
