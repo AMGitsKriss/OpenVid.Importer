@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Database.Models;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -172,6 +171,22 @@ namespace Database
         public IQueryable<VideoSegmentQueue> GetSegmentJobsForVideo(int videoId)
         {
             return _context.VideoSegmentQueue.Where(q => q.VideoId == videoId);
+        }
+
+        public List<VideoEncodeQueue> GetSimilarEncodeJobs(VideoEncodeQueue queueItem)
+        {
+            var sql = "SELECT TOP 1 * FROM VideoEncodeQueue WHERE IsDone = 0 AND VideoId = @VideoId AND Quality = @Quality AND MaxHeight = @MaxHeight AND RenderSpeed = @RenderSpeed AND Encoder = @Encoder";
+            using var connection = _dbConnectionFactory.OpenDefault();
+
+            var result = connection.Query<VideoEncodeQueue>(sql, new {
+                queueItem.VideoId,
+                queueItem.Quality,
+                queueItem.MaxHeight,
+                queueItem.RenderSpeed,
+                queueItem.Encoder,
+            });
+
+            return result.ToList();
         }
     }
 }

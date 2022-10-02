@@ -29,6 +29,7 @@ namespace OpenVid.Importer
                     VideoSegmentQueueId = selectedJob.Id,
 
                     ArgStream = "audio",
+                    ArgStreamId = stream.Id,
                     ArgInputFolder = videoStream.ArgInputFolder,
                     ArgInputFile = videoStream.ArgInputFile,
                     ArgStreamFolder = $"audio_{stream.Language}",

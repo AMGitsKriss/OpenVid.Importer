@@ -1,5 +1,6 @@
 ﻿using CatalogManager.Segment;
 using Database;
+using Database.Extensions;
 using Database.Models;
 using Microsoft.Extensions.Options;
 using OpenVid.Importer.Helpers;
@@ -14,7 +15,6 @@ namespace OpenVid.Importer
         private readonly IVideoRepository _repository;
         private readonly ISegmenter _segmenter;
         private readonly CatalogImportOptions _configuration;
-        private volatile bool _continueJob;
 
         public SegmenterContainer(IVideoRepository repository, ISegmenter segmenter, IOptions<CatalogImportOptions> configuration)
         {
@@ -26,7 +26,7 @@ namespace OpenVid.Importer
         public void Run(VideoSegmentQueue selectedJob)
         {
             var workingDirectory = selectedJob.VideoSegmentQueueItem.First().ArgInputFolder;
-            _segmenter.Execute(selectedJob.VideoSegmentQueueItem.ToList());
+            _segmenter.Execute(selectedJob.VideoSegmentQueueItem.DistinctBy(i => new { i.ArgStream, i.ArgLanguage}).ToList());
             // TODO - Validate that the DASH and HLS files exist
 
             string md5;
@@ -75,7 +75,8 @@ namespace OpenVid.Importer
             string vidSubFolder = md5.Substring(0, 2);
             string finalDirectory = Path.Combine(_configuration.BucketDirectory, "video", vidSubFolder, md5);
             FileHelpers.TouchDirectory(Path.Combine(_configuration.BucketDirectory, "video", vidSubFolder));
-            Directory.Move(workingDirectory, finalDirectory);
+            FileHelpers.CopyDirectory(workingDirectory, finalDirectory);
+            Directory.Delete(workingDirectory, true);
 
             _repository.SetPendingSegmentingDone(selectedJob.VideoId);
         }

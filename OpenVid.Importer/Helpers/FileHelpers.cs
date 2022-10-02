@@ -22,5 +22,24 @@ namespace OpenVid.Importer.Helpers
                 }
             }
         }
+
+        public static void CopyDirectory(string source, string destination)
+        {
+            foreach (var directory in Directory.GetDirectories(source))
+            {
+                string dirName = Path.GetFileName(directory);
+                if (!Directory.Exists(Path.Combine(destination, dirName)))
+                {
+                    Directory.CreateDirectory(Path.Combine(destination, dirName));
+                }
+                CopyDirectory(directory, Path.Combine(destination, dirName));
+            }
+
+            foreach (var file in Directory.GetFiles(source))
+            {
+                File.Copy(file, Path.Combine(destination, Path.GetFileName(file)));
+            }
+
+        }
     }
 }

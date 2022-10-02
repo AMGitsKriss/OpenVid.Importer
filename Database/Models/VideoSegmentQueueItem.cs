@@ -24,6 +24,7 @@ namespace Database.Models
         /// eg. audio, video, text
         /// </summary>
         public string ArgStream { get; set; }
+        public string? ArgStreamId { get; set; }
 
         /// <summary>
         /// eg. audio_eng, 720, subtitles_eng

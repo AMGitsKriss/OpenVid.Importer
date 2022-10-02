@@ -127,6 +127,10 @@ namespace Database.Models
                     .HasMaxLength(32)
                     .IsUnicode(false);
 
+                entity.Property(e => e.ArgStreamId)
+                    .HasMaxLength(32)
+                    .IsUnicode(false);
+
                 entity.Property(e => e.VideoSegmentQueueId).HasColumnName("VideoSegmentQueueId");
 
                 entity.HasOne(d => d.Video)

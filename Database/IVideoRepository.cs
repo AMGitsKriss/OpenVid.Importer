@@ -18,5 +18,6 @@ namespace Database
         void SetPendingSegmentingDone(int videoId);
         IQueryable<VideoSegmentQueue> GetSegmentJobsForVideo(int videoId);
         VideoSegmentQueue GetNextPendingSegment();
+        List<VideoEncodeQueue> GetSimilarEncodeJobs(VideoEncodeQueue queueItem);
     }
 }

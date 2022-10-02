@@ -19,7 +19,6 @@ namespace OpenVid.Importer
         private readonly IFindMetadata _metadata;
         private readonly IGenerateThumbnails _generateThumbnails;
         private readonly CatalogImportOptions _configuration;
-        private volatile bool _continueJob;
 
         public EncoderContainer(IVideoRepository repository, IEncoder encoder, IFindMetadata metadata, IGenerateThumbnails generateThumbnails, IOptions<CatalogImportOptions> configuration)
         {
@@ -53,20 +52,27 @@ namespace OpenVid.Importer
 
             CreateThumbnail(queueItem);
 
-            // Write the new source entry
-            if (queueItem.PlaybackFormat == "mp4")
-            {
-                SaveMp4Video(queueItem, metadata);
-            }
-            else if (queueItem.PlaybackFormat == "dash")
-            {
-                MoveDashVideoAwaitingPackager(queueItem);
-                AddToSegmentQueue(queueItem);
-            }
+            var jobsWithThisQuality = _repository.GetSimilarEncodeJobs(queueItem);
 
-            // Mark as done before looping
-            queueItem.IsDone = true;
-            _repository.SaveEncodeJob(queueItem);
+
+            foreach (var job in jobsWithThisQuality)
+            {
+                // Write the new source entry
+                if (job.PlaybackFormat == "mp4")
+                {
+                    SaveMp4Video(job, metadata);
+                }
+                else if (job.PlaybackFormat == "dash")
+                {
+                    CopyDashVideoAwaitingPackager(job);
+                    AddToSegmentQueue(job);
+                }
+
+                // Mark as done before looping
+                job.IsDone = true;
+                _repository.SaveEncodeJob(job);
+            }
+            File.Delete(queueItem.OutputDirectory);
         }
 
 
@@ -100,15 +106,15 @@ namespace OpenVid.Importer
             string videoDirectory = Path.Combine(_configuration.BucketDirectory, "video", vidSubFolder);
             FileHelpers.TouchDirectory(videoDirectory);
             string videoBucketDirectory = Path.Combine(videoDirectory, $"{md5}{Path.GetExtension(queueItem.OutputDirectory)}");
-            File.Move(queueItem.OutputDirectory, videoBucketDirectory);
+            File.Copy(queueItem.OutputDirectory, videoBucketDirectory);
         }
 
-        private void MoveDashVideoAwaitingPackager(VideoEncodeQueue queueItem)
+        private void CopyDashVideoAwaitingPackager(VideoEncodeQueue queueItem)
         {
             var segmentedDirectory = Path.Combine(_configuration.ImportDirectory, "04_shaka_packager", Path.GetFileNameWithoutExtension(queueItem.InputDirectory));
             var segmentedFullName = Path.Combine(segmentedDirectory, Path.GetFileName(queueItem.OutputDirectory));
             FileHelpers.TouchDirectory(segmentedDirectory);
-            File.Move(queueItem.OutputDirectory, segmentedFullName);
+            File.Copy(queueItem.OutputDirectory, segmentedFullName);
         }
 
         private void AddToSegmentQueue(VideoEncodeQueue queueItem)
