@@ -4,6 +4,7 @@ using Database.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using OpenVid.Importer.Entities;
 using OpenVid.Importer.Tasks.AudioTracks;
 using OpenVid.Importer.Tasks.Encoder;
@@ -20,6 +21,7 @@ namespace OpenVid.Importer
         private static EncoderContainer _encoderService;
         private static AudioContainer _audioService;
         private static SegmenterContainer _segmenter;
+        private static CatalogImportOptions _configuration;
 
         static void Main(string[] args)
         {
@@ -28,17 +30,19 @@ namespace OpenVid.Importer
             _encoderService = serviceProvider.GetService<EncoderContainer>();
             _audioService = serviceProvider.GetService<AudioContainer>();
             _segmenter = serviceProvider.GetService<SegmenterContainer>();
+            _configuration = serviceProvider.GetService<IOptions<CatalogImportOptions>>().Value;
 
             VideoEncodeQueue pendingEncodeJob;
             while ((pendingEncodeJob = _repository.GetNextPendingEncode()) != null)
             {
-                EncodeJobContext context = new EncodeJobContext(null, pendingEncodeJob);
-                _encoderService.Run(pendingEncodeJob);
+                var jobContext = new EncodeJobContext(_configuration, pendingEncodeJob);
+                _encoderService.Run(jobContext);
             }
 
             VideoSegmentQueue pendingSegmentJob;
             while ((pendingSegmentJob = _repository.GetNextPendingSegment()) != null)
             {
+                var jobContext = new SegmentJobContext(_configuration, pendingSegmentJob);
                 if (!pendingSegmentJob.VideoSegmentQueueItem.Any(i => i.ArgStream == "audio"))
                 {
                     _audioService.Run(pendingSegmentJob);

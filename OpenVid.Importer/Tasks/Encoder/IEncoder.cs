@@ -1,9 +1,9 @@
-﻿using Database.Models;
+﻿using OpenVid.Importer.Entities;
 
 namespace OpenVid.Importer.Tasks.Encoder
 {
     public interface IEncoder
     {
-        void Execute(VideoEncodeQueue queueItem);
+        void Execute(EncodeJobContext queueItem);
     }
 }

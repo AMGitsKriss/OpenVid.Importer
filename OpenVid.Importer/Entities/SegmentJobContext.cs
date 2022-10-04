@@ -3,7 +3,7 @@ using System.IO;
 
 namespace OpenVid.Importer.Entities
 {
-    public class EncodeJobContext
+    public class SegmentJobContext
     {
         private readonly CatalogImportOptions _configuration;
 
@@ -12,13 +12,13 @@ namespace OpenVid.Importer.Entities
         private readonly string _transcoded = "03_transcode_complete";
         private readonly string _packager = "04_shaka_packager";
 
-        public EncodeJobContext(CatalogImportOptions configuration, VideoEncodeQueue videoEncodeQueue)
+        public SegmentJobContext(CatalogImportOptions configuration, VideoSegmentQueue videoEncodeQueue)
         {
             _configuration = configuration;
             QueueItem = videoEncodeQueue;
         }
 
-        public VideoEncodeQueue QueueItem { get; set; }
+        public VideoSegmentQueue QueueItem { get; set; }
 
         // INGEST
         public string FolderIngest

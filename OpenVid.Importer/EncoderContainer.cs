@@ -9,6 +9,7 @@ using OpenVid.Importer.Tasks.Metadata;
 using OpenVid.Importer.Models;
 using OpenVid.Importer.Helpers;
 using OpenVid.Importer.Tasks.Encoder;
+using OpenVid.Importer.Entities;
 
 namespace OpenVid.Importer
 {
@@ -29,22 +30,20 @@ namespace OpenVid.Importer
             _configuration = configuration.Value;
         }
 
-        public void Run(VideoEncodeQueue queueItem)
+        public void Run(EncodeJobContext jobContext)
         {
             // TODO - Kaichou wa Maid-sama fails quietly
-            _encoder.Execute(queueItem);
+            _encoder.Execute(jobContext);
 
             // If getting metadata works, then we know the file exists
-            var inputDir = Path.Combine(_configuration.ImportDirectory, "02_queued", queueItem.InputDirectory);
-            var crunchedDir = Path.Combine(_configuration.ImportDirectory, "03_transcode_complete", queueItem.OutputDirectory);
-            var metadata = _metadata.Execute(crunchedDir);
+            var metadata = _metadata.Execute(jobContext.FileTranscoded);
 
             // Remove the old file
-            if (!_repository.IsFileStillNeeded(queueItem.VideoId))
+            if (!_repository.IsFileStillNeeded(jobContext.QueueItem.VideoId))
             {
                 try
                 {
-                    File.Delete(inputDir);
+                    File.Delete(jobContext.FileIngest);
                 }
                 catch (Exception ex)
                 {
@@ -52,9 +51,9 @@ namespace OpenVid.Importer
                 }
             }
 
-            CreateThumbnail(queueItem);
+            CreateThumbnail(jobContext);
 
-            var jobsWithThisQuality = _repository.GetSimilarEncodeJobs(queueItem);
+            var jobsWithThisQuality = _repository.GetSimilarEncodeJobs(jobContext.QueueItem);
 
 
             foreach (var job in jobsWithThisQuality)
@@ -74,19 +73,19 @@ namespace OpenVid.Importer
                 job.IsDone = true;
                 _repository.SaveEncodeJob(job);
             }
-            File.Delete(crunchedDir);
+            File.Delete(jobContext.FileTranscoded);
         }
 
 
-        private void CreateThumbnail(VideoEncodeQueue queueItem)
+        private void CreateThumbnail(EncodeJobContext jobContext)
         {
-            string thumbSubFolder = queueItem.VideoId.ToString().PadLeft(2, '0').Substring(0, 2);
+            string thumbSubFolder = jobContext.QueueItem.VideoId.ToString().PadLeft(2, '0').Substring(0, 2);
             string thumbDirectory = Path.Combine(_configuration.BucketDirectory, "thumbnail", thumbSubFolder);
             FileHelpers.TouchDirectory(thumbDirectory);
 
-            string thumbPath = Path.Combine(thumbDirectory, $"{queueItem.VideoId.ToString().PadLeft(2, '0')}.jpg");
+            string thumbPath = Path.Combine(thumbDirectory, $"{jobContext.QueueItem.VideoId.ToString().PadLeft(2, '0')}.jpg");
             if (!File.Exists(thumbPath))
-                _generateThumbnails.Execute(queueItem.OutputDirectory, thumbPath, _configuration.ThumbnailFramesIntoVideo);
+                _generateThumbnails.Execute(jobContext.FileTranscoded, thumbPath, _configuration.ThumbnailFramesIntoVideo);
         }
 
         private void SaveMp4Video(VideoEncodeQueue queueItem, VideoMetadata metadata)

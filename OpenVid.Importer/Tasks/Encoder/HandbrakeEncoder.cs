@@ -1,31 +1,19 @@
-﻿using Database.Models;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
+using OpenVid.Importer.Entities;
 using System;
 using System.Diagnostics;
-using System.IO;
 
 namespace OpenVid.Importer.Tasks.Encoder
 {
     public class HandbrakeEncoder : IEncoder
     {
-        private CatalogImportOptions _configuration;
-
-        public HandbrakeEncoder(IOptions<CatalogImportOptions> configuration)
+        public void Execute(EncodeJobContext jobContext)
         {
-            _configuration = configuration.Value;
-        }
-
-        public void Execute(VideoEncodeQueue queueItem)
-        {
-            Console.WriteLine("Converting file {0}", Path.GetFileNameWithoutExtension(queueItem.InputDirectory));
-            Helpers.FileHelpers.TouchDirectory(_configuration.ImportDirectory);
-
-            var inputDir = Path.Combine(_configuration.ImportDirectory, "02_queued", queueItem.InputDirectory);
-            var outputDir = Path.Combine(_configuration.ImportDirectory, "03_transcode_complete", queueItem.OutputDirectory);
+            Console.WriteLine("Converting file {0}", jobContext.InputFileName);
 
             string exe = @"C:\handbrakecli\HandBrakeCLI.exe"; // TODO - [HandbrakeCLI] Should be configurable.What if I want to install this elsewhere?
-            string dimensionArgs = queueItem.IsVertical ? $" --maxWidth {queueItem.MaxHeight}" : $" --maxHeight {queueItem.MaxHeight}";
-            string args = $@" -i ""{inputDir}"" -o ""{outputDir}"" -e {queueItem.Encoder} --encoder-preset {queueItem.RenderSpeed} -f {queueItem.VideoFormat} --optimize --all-audio --all-subtitles -q {queueItem.Quality} {dimensionArgs}";
+            string dimensionArgs = jobContext.QueueItem.IsVertical ? $" --maxWidth {jobContext.QueueItem.MaxHeight}" : $" --maxHeight {jobContext.QueueItem.MaxHeight}";
+            string args = $@" -i ""{jobContext.FileQueued}"" -o ""{jobContext.FileTranscoded}"" -e {jobContext.QueueItem.Encoder} --encoder-preset {jobContext.QueueItem.RenderSpeed} -f {jobContext.QueueItem.VideoFormat} --optimize --all-audio --all-subtitles -q {jobContext.QueueItem.Quality} {dimensionArgs}";
 
             Process proc = new Process();
             proc.StartInfo.FileName = exe;
