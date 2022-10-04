@@ -35,14 +35,16 @@ namespace OpenVid.Importer
             _encoder.Execute(queueItem);
 
             // If getting metadata works, then we know the file exists
-            var metadata = _metadata.Execute(queueItem.OutputDirectory);
+            var inputDir = Path.Combine(_configuration.ImportDirectory, "02_queued", queueItem.InputDirectory);
+            var crunchedDir = Path.Combine(_configuration.ImportDirectory, "03_transcode_complete", queueItem.OutputDirectory);
+            var metadata = _metadata.Execute(crunchedDir);
 
             // Remove the old file
             if (!_repository.IsFileStillNeeded(queueItem.VideoId))
             {
                 try
                 {
-                    File.Delete(queueItem.InputDirectory);
+                    File.Delete(inputDir);
                 }
                 catch (Exception ex)
                 {
@@ -72,7 +74,7 @@ namespace OpenVid.Importer
                 job.IsDone = true;
                 _repository.SaveEncodeJob(job);
             }
-            File.Delete(queueItem.OutputDirectory);
+            File.Delete(crunchedDir);
         }
 
 
@@ -89,15 +91,16 @@ namespace OpenVid.Importer
 
         private void SaveMp4Video(VideoEncodeQueue queueItem, VideoMetadata metadata)
         {
-            var md5 = FileHelpers.GenerateHash(queueItem.OutputDirectory);
+            var crunchedDir = Path.Combine(_configuration.ImportDirectory, queueItem.OutputDirectory);
+            var md5 = FileHelpers.GenerateHash(crunchedDir);
             var videoSource = new VideoSource()
             {
                 VideoId = queueItem.VideoId,
                 Md5 = md5,
                 Width = metadata.Width,
                 Height = metadata.Height,
-                Size = new FileInfo(queueItem.OutputDirectory).Length,
-                Extension = Path.GetExtension(queueItem.OutputDirectory).Replace(".", "")
+                Size = new FileInfo(crunchedDir).Length,
+                Extension = Path.GetExtension(crunchedDir).Replace(".", "")
             };
             _repository.SaveVideoSource(videoSource);
 
@@ -106,15 +109,16 @@ namespace OpenVid.Importer
             string videoDirectory = Path.Combine(_configuration.BucketDirectory, "video", vidSubFolder);
             FileHelpers.TouchDirectory(videoDirectory);
             string videoBucketDirectory = Path.Combine(videoDirectory, $"{md5}{Path.GetExtension(queueItem.OutputDirectory)}");
-            File.Copy(queueItem.OutputDirectory, videoBucketDirectory);
+            File.Copy(crunchedDir, videoBucketDirectory);
         }
 
         private void CopyDashVideoAwaitingPackager(VideoEncodeQueue queueItem)
         {
+            var crunchedDir = Path.Combine(_configuration.ImportDirectory, "03_transcode_complete", queueItem.OutputDirectory);
             var segmentedDirectory = Path.Combine(_configuration.ImportDirectory, "04_shaka_packager", Path.GetFileNameWithoutExtension(queueItem.InputDirectory));
             var segmentedFullName = Path.Combine(segmentedDirectory, Path.GetFileName(queueItem.OutputDirectory));
             FileHelpers.TouchDirectory(segmentedDirectory);
-            File.Copy(queueItem.OutputDirectory, segmentedFullName);
+            File.Copy(crunchedDir, segmentedFullName);
         }
 
         private void AddToSegmentQueue(VideoEncodeQueue queueItem)

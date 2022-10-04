@@ -11,6 +11,7 @@ namespace OpenVid.Importer.Helpers
             if (!Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
         }
+
         public static string GenerateHash(string filename)
         {
             using (var md5 = MD5.Create())

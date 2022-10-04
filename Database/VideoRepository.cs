@@ -175,7 +175,7 @@ namespace Database
 
         public List<VideoEncodeQueue> GetSimilarEncodeJobs(VideoEncodeQueue queueItem)
         {
-            var sql = "SELECT TOP 1 * FROM VideoEncodeQueue WHERE IsDone = 0 AND VideoId = @VideoId AND Quality = @Quality AND MaxHeight = @MaxHeight AND RenderSpeed = @RenderSpeed AND Encoder = @Encoder";
+            var sql = "SELECT * FROM VideoEncodeQueue WHERE IsDone = 0 AND VideoId = @VideoId AND Quality = @Quality AND MaxHeight = @MaxHeight AND RenderSpeed = @RenderSpeed AND Encoder = @Encoder";
             using var connection = _dbConnectionFactory.OpenDefault();
 
             var result = connection.Query<VideoEncodeQueue>(sql, new {

@@ -4,6 +4,7 @@ using Database.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenVid.Importer.Entities;
 using OpenVid.Importer.Tasks.AudioTracks;
 using OpenVid.Importer.Tasks.Encoder;
 using OpenVid.Importer.Tasks.Metadata;
@@ -31,6 +32,7 @@ namespace OpenVid.Importer
             VideoEncodeQueue pendingEncodeJob;
             while ((pendingEncodeJob = _repository.GetNextPendingEncode()) != null)
             {
+                EncodeJobContext context = new EncodeJobContext(null, pendingEncodeJob);
                 _encoderService.Run(pendingEncodeJob);
             }
 
