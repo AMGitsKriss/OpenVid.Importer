@@ -73,7 +73,7 @@ namespace OpenVid.Importer.Entities
         {
             get
             {
-                return Path.Combine(_configuration.ImportDirectory, _packager);
+                return Path.Combine(_configuration.ImportDirectory, _packager, InputFileName);
             }
         }
         public string FilePackager

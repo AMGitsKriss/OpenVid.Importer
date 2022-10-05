@@ -13,6 +13,7 @@ namespace OpenVid.Importer.Tasks.AudioTracks
     {
         public List<AudioTrack> Execute(VideoSegmentQueueItem video)
         {
+            Console.WriteLine("Finding audio for file {0}", Path.GetFileNameWithoutExtension(video.ArgInputFile));
             var location = Path.Combine(video.ArgInputFolder, video.ArgInputFile);
 
             string cmd = $"in=\"{location}\" --dump_stream_info";

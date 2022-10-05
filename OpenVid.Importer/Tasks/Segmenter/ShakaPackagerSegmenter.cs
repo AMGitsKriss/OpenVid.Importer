@@ -12,6 +12,7 @@ namespace CatalogManager.Segment
         public void Execute(List<VideoSegmentQueueItem> videosToSegment)
         {
             var firstVideo = videosToSegment.First();
+            Console.WriteLine("Segmenting file {0}", Path.GetFileNameWithoutExtension(firstVideo.ArgInputFile));
             var exe = @"c:\shaka-packager\packager.exe";
             var args = string.Empty;
 
@@ -21,7 +22,7 @@ namespace CatalogManager.Segment
                 var videoInitFullName = Path.Combine(video.ArgInputFolder, video.ArgStreamFolder, @$"init.mp4");
                 var videoItemsFullName = Path.Combine(video.ArgInputFolder, video.ArgStreamFolder, @$"$Number$.m4s");
                 var inputFullName = Path.Combine(video.ArgInputFolder, video.ArgInputFile);
-                string fileToSegment = @$"in=""{inputFullName}"",stream={video.ArgStreamId ?? video.ArgStream},init_segment=""{videoInitFullName}"",segment_template=""{videoItemsFullName}""{language} ";
+                string fileToSegment = @$"'in=""{inputFullName}"",stream={video.ArgStreamId ?? video.ArgStream},init_segment=""{videoInitFullName}"",segment_template=""{videoItemsFullName}""{language}' ";
                 args += fileToSegment;
             }
             var dashFile = Path.Combine(firstVideo.ArgInputFolder, "dash.mpd");
@@ -34,11 +35,16 @@ namespace CatalogManager.Segment
             proc.StartInfo.Arguments = args;
             proc.StartInfo.CreateNoWindow = false; 
             proc.StartInfo.UseShellExecute = false;
+            proc.StartInfo.RedirectStandardOutput = true;
+            proc.StartInfo.RedirectStandardError = true;
 
             if (!proc.Start())
             {
                 throw new Exception("Error starting the HandbrakeCLI process.");
             }
+
+            string outputString = proc.StandardOutput.ReadToEnd();
+            string errorString = proc.StandardError.ReadToEnd();
 
             proc.WaitForExit();
             proc.Close();

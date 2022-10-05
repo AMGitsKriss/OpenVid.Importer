@@ -35,14 +35,6 @@ namespace Database.Models
         /// </summary>
         public string? ArgLanguage { get; set; }
 
-        public string InputFileFullName
-        {
-            get
-            {
-                return Path.Combine(ArgInputFolder, ArgInputFile);
-            }
-        }
-
         public virtual VideoSegmentQueue VideoSegmentQueue { get; set; }
         public virtual Video Video { get; set; }
     }

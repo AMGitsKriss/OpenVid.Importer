@@ -3,6 +3,7 @@ using Database;
 using Database.Extensions;
 using Database.Models;
 using Microsoft.Extensions.Options;
+using OpenVid.Importer.Entities;
 using OpenVid.Importer.Helpers;
 using System;
 using System.IO;
@@ -23,24 +24,20 @@ namespace OpenVid.Importer
             _configuration = configuration.Value;
         }
 
-        public void Run(VideoSegmentQueue selectedJob)
+        public void Run(SegmentJobContext jobContext)
         {
-            var workingDirectory = selectedJob.VideoSegmentQueueItem.First().ArgInputFolder;
-            _segmenter.Execute(selectedJob.VideoSegmentQueueItem.DistinctBy(i => new { i.ArgStream, i.ArgLanguage}).ToList());
+            _segmenter.Execute(jobContext.SegmentJob.VideoSegmentQueueItem.DistinctBy(i => new { i.ArgStream, i.ArgLanguage}).ToList());
             // TODO - Validate that the DASH and HLS files exist
 
             string md5;
-            string videoManifestDir = Path.Combine(workingDirectory, "dash.mpd");
-            string videoPlaylistDir = Path.Combine(workingDirectory, "hls.m3u8");
-
-            DirectoryInfo dirInfo = new DirectoryInfo(workingDirectory);
+            DirectoryInfo dirInfo = new DirectoryInfo(jobContext.WorkingDirectory);
             long dirSize = dirInfo.GetFiles().Sum(f => f.Length);
 
             // Create a source for MPD
-            md5 = FileHelpers.GenerateHash(videoManifestDir);
+            md5 = FileHelpers.GenerateHash(jobContext.ManifestDirectory);
             var dashSource = new VideoSource()
             {
-                VideoId = selectedJob.VideoId,
+                VideoId = jobContext.SegmentJob.VideoId,
                 Md5 = md5,
                 Extension = "mpd",
                 Size = dirSize
@@ -49,7 +46,7 @@ namespace OpenVid.Importer
             // Create a source for M3U8
             var hlsSource = new VideoSource()
             {
-                VideoId = selectedJob.VideoId,
+                VideoId = jobContext.SegmentJob.VideoId,
                 Md5 = md5,
                 Extension = "m3u8",
                 Size = dirSize
@@ -58,13 +55,13 @@ namespace OpenVid.Importer
             _repository.SaveVideoSource(dashSource);
             _repository.SaveVideoSource(hlsSource);
 
-            foreach (var item in selectedJob.VideoSegmentQueueItem)
+            foreach (var item in jobContext.SegmentJob.VideoSegmentQueueItem)
             {
                 try
                 {
                     // TODO - Only removed while testing
                     // TODO - Make configurable?
-                    //File.Delete(item.InputFileFullName); 
+                    File.Delete(item.InputFileFullName); 
                 }
                 catch (Exception ex)
                 {
@@ -75,10 +72,10 @@ namespace OpenVid.Importer
             string vidSubFolder = md5.Substring(0, 2);
             string finalDirectory = Path.Combine(_configuration.BucketDirectory, "video", vidSubFolder, md5);
             FileHelpers.TouchDirectory(Path.Combine(_configuration.BucketDirectory, "video", vidSubFolder));
-            FileHelpers.CopyDirectory(workingDirectory, finalDirectory);
-            Directory.Delete(workingDirectory, true);
+            FileHelpers.CopyDirectory(jobContext.WorkingDirectory, finalDirectory);
+            Directory.Delete(jobContext.WorkingDirectory, true);
 
-            _repository.SetPendingSegmentingDone(selectedJob.VideoId);
+            _repository.SetPendingSegmentingDone(jobContext.SegmentJob.VideoId);
         }
     }
 }

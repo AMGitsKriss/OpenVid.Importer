@@ -1,6 +1,7 @@
 ﻿using OpenVid.Importer.Models;
 using System;
 using System.Diagnostics;
+using System.IO;
 
 namespace OpenVid.Importer.Tasks.Metadata
 {
@@ -8,6 +9,8 @@ namespace OpenVid.Importer.Tasks.Metadata
     {
         public VideoMetadata Execute(string location)
         {
+            Console.WriteLine("Finding MetaDate for file {0}", Path.GetFileNameWithoutExtension(location));
+            
             string cmd = $"-v error -select_streams v:0 -show_entries stream=width,height,duration -show_entries format=duration -of csv=s=x:p=0 \"{location}\"";
             Process proc = new Process();
             proc.StartInfo.FileName = @"c:\ffmpeg\ffprobe.exe";

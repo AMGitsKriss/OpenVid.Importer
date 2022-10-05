@@ -56,22 +56,22 @@ namespace OpenVid.Importer
             var jobsWithThisQuality = _repository.GetSimilarEncodeJobs(jobContext.QueueItem);
 
 
-            foreach (var job in jobsWithThisQuality)
+            foreach (var job in jobsWithThisQuality.Select(j => new EncodeJobContext(_configuration, j)))
             {
                 // Write the new source entry
-                if (job.PlaybackFormat == "mp4")
+                if (job.QueueItem.PlaybackFormat == "mp4")
                 {
                     SaveMp4Video(job, metadata);
                 }
-                else if (job.PlaybackFormat == "dash")
+                else if (job.QueueItem.PlaybackFormat == "dash")
                 {
                     CopyDashVideoAwaitingPackager(job);
                     AddToSegmentQueue(job);
                 }
 
                 // Mark as done before looping
-                job.IsDone = true;
-                _repository.SaveEncodeJob(job);
+                job.QueueItem.IsDone = true;
+                _repository.SaveEncodeJob(job.QueueItem);
             }
             File.Delete(jobContext.FileTranscoded);
         }
@@ -88,18 +88,17 @@ namespace OpenVid.Importer
                 _generateThumbnails.Execute(jobContext.FileTranscoded, thumbPath, _configuration.ThumbnailFramesIntoVideo);
         }
 
-        private void SaveMp4Video(VideoEncodeQueue queueItem, VideoMetadata metadata)
+        private void SaveMp4Video(EncodeJobContext jobContext, VideoMetadata metadata)
         {
-            var crunchedDir = Path.Combine(_configuration.ImportDirectory, queueItem.OutputDirectory);
-            var md5 = FileHelpers.GenerateHash(crunchedDir);
+            var md5 = FileHelpers.GenerateHash(jobContext.FileTranscoded);
             var videoSource = new VideoSource()
             {
-                VideoId = queueItem.VideoId,
+                VideoId = jobContext.QueueItem.VideoId,
                 Md5 = md5,
                 Width = metadata.Width,
                 Height = metadata.Height,
-                Size = new FileInfo(crunchedDir).Length,
-                Extension = Path.GetExtension(crunchedDir).Replace(".", "")
+                Size = new FileInfo(jobContext.FileTranscoded).Length,
+                Extension = jobContext.OutputExtension.Replace(".", "")
             };
             _repository.SaveVideoSource(videoSource);
 
@@ -107,42 +106,37 @@ namespace OpenVid.Importer
             string vidSubFolder = md5.Substring(0, 2);
             string videoDirectory = Path.Combine(_configuration.BucketDirectory, "video", vidSubFolder);
             FileHelpers.TouchDirectory(videoDirectory);
-            string videoBucketDirectory = Path.Combine(videoDirectory, $"{md5}{Path.GetExtension(queueItem.OutputDirectory)}");
-            File.Copy(crunchedDir, videoBucketDirectory);
+            string videoBucketDirectory = Path.Combine(videoDirectory, $"{md5}{jobContext.OutputExtension}");
+            File.Copy(jobContext.FileTranscoded, videoBucketDirectory);
         }
 
-        private void CopyDashVideoAwaitingPackager(VideoEncodeQueue queueItem)
+        private void CopyDashVideoAwaitingPackager(EncodeJobContext jobContext)
         {
-            var crunchedDir = Path.Combine(_configuration.ImportDirectory, "03_transcode_complete", queueItem.OutputDirectory);
-            var segmentedDirectory = Path.Combine(_configuration.ImportDirectory, "04_shaka_packager", Path.GetFileNameWithoutExtension(queueItem.InputDirectory));
-            var segmentedFullName = Path.Combine(segmentedDirectory, Path.GetFileName(queueItem.OutputDirectory));
-            FileHelpers.TouchDirectory(segmentedDirectory);
-            File.Copy(crunchedDir, segmentedFullName);
+            FileHelpers.TouchDirectory(jobContext.FolderPackager);
+            File.Copy(jobContext.FileTranscoded, jobContext.FilePackager);
         }
 
-        private void AddToSegmentQueue(VideoEncodeQueue queueItem)
+        private void AddToSegmentQueue(EncodeJobContext jobContext)
         {
-            var segmentedDirectory = Path.Combine(_configuration.ImportDirectory, "04_shaka_packager", Path.GetFileNameWithoutExtension(queueItem.InputDirectory));
-
-            var segmentJob = _repository.GetSegmentJobsForVideo(queueItem.VideoId)
+            var segmentJob = _repository.GetSegmentJobsForVideo(jobContext.QueueItem.VideoId)
                 .Where(j => !j.IsDone && !j.IsReady).FirstOrDefault();
 
             if (segmentJob == null)
             {
                 segmentJob = new VideoSegmentQueue()
                 {
-                    VideoId = queueItem.VideoId
+                    VideoId = jobContext.QueueItem.VideoId
                 };
                 _repository.SaveSegmentJob(segmentJob);
             }
 
             var job = new VideoSegmentQueueItem()
             {
-                VideoId = queueItem.VideoId,
+                VideoId = jobContext.QueueItem.VideoId,
                 VideoSegmentQueueId = segmentJob.Id,
-                ArgStreamFolder = queueItem.MaxHeight.ToString(),
-                ArgInputFile = Path.GetFileName(queueItem.OutputDirectory),
-                ArgInputFolder = segmentedDirectory,
+                ArgStreamFolder = jobContext.QueueItem.MaxHeight.ToString(),
+                ArgInputFile = jobContext.QueueItem.OutputDirectory,
+                ArgInputFolder = jobContext.FolderPackager,
                 ArgStream = "video"
             };
 

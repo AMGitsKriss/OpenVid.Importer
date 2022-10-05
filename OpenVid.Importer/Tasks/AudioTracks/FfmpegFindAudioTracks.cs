@@ -14,7 +14,7 @@ namespace OpenVid.Importer.Tasks.AudioTracks
         public List<AudioTrack> Execute(VideoSegmentQueueItem video)
         {
             var source = Path.Combine(video.ArgInputFolder, video.ArgInputFile);
-         
+            Console.WriteLine("Finding audio for file {0}", Path.GetFileNameWithoutExtension(video.ArgInputFile));
 
             string args = $"-i \"{source}\"";
             Process proc = new Process();

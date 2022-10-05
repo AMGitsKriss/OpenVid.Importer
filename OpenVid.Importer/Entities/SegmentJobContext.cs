@@ -1,5 +1,7 @@
 ﻿using Database.Models;
+using System;
 using System.IO;
+using System.Linq;
 
 namespace OpenVid.Importer.Entities
 {
@@ -15,79 +17,22 @@ namespace OpenVid.Importer.Entities
         public SegmentJobContext(CatalogImportOptions configuration, VideoSegmentQueue videoEncodeQueue)
         {
             _configuration = configuration;
-            QueueItem = videoEncodeQueue;
+            SegmentJob = videoEncodeQueue;
         }
 
-        public VideoSegmentQueue QueueItem { get; set; }
+        public VideoSegmentQueue SegmentJob { get; set; }
 
         // INGEST
-        public string FolderIngest
+        public string WorkingDirectory
         {
             get
             {
-                return Path.Combine(_configuration.ImportDirectory, _ingest);
-            }
-        }
-        public string FileIngest
-        {
-            get
-            {
-                return Path.Combine(FolderIngest, QueueItem.InputDirectory);
+                return SegmentJob.VideoSegmentQueueItem.First().ArgInputFolder;
             }
         }
 
-        // QUEUED
-        public string FolderQueued
-        {
-            get
-            {
-                return Path.Combine(_configuration.ImportDirectory, _queued);
-            }
-        }
-        public string FileQueued
-        {
-            get
-            {
-                return Path.Combine(FolderQueued, QueueItem.InputDirectory);
-            }
-        }
-
-        // TRANSCODED
-        public string FolderTranscoded
-        {
-            get
-            {
-                return Path.Combine(_configuration.ImportDirectory, _transcoded);
-            }
-        }
-        public string FileTranscoded
-        {
-            get
-            {
-                return Path.Combine(FolderTranscoded, QueueItem.OutputDirectory);
-            }
-        }
-
-        // PENDING PACKAGING
-        public string FolderPackager
-        {
-            get
-            {
-                return Path.Combine(_configuration.ImportDirectory, _packager);
-            }
-        }
-        public string FilePackager
-        {
-            get
-            {
-                return Path.Combine(FolderPackager, QueueItem.OutputDirectory);
-            }
-        }
-
-        public string InputFileName => Path.GetFileNameWithoutExtension(QueueItem.InputDirectory);
-        public string InputExtension => Path.GetExtension(QueueItem.InputDirectory);
-
-        public string OutputFileName => Path.GetFileNameWithoutExtension(QueueItem.OutputDirectory);
-        public string OutputExtension => Path.GetExtension(QueueItem.OutputDirectory);
+        public bool HasAudioTracks => SegmentJob.VideoSegmentQueueItem.Any(i => i.ArgStream == "audio");
+        public string ManifestDirectory => Path.Combine(WorkingDirectory, "dash.mpd");
+        public string PlaylistDirectory => Path.Combine(WorkingDirectory, "hls.m3u8");
     }
 }
