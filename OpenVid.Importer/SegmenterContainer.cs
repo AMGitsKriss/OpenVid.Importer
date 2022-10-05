@@ -61,7 +61,7 @@ namespace OpenVid.Importer
                 {
                     // TODO - Only removed while testing
                     // TODO - Make configurable?
-                    File.Delete(item.InputFileFullName); 
+                    File.Delete(Path.Combine(jobContext.WorkingDirectory, item.ArgInputFile)); 
                 }
                 catch (Exception ex)
                 {
