@@ -1,4 +1,6 @@
 ﻿using Database.Models;
+using Microsoft.Extensions.Options;
+using OpenVid.Importer;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,6 +11,13 @@ namespace CatalogManager.Segment
 {
     public class ShakaPackagerSegmenter : ISegmenter
     {
+        private readonly CatalogImportOptions _configuration;
+
+        public ShakaPackagerSegmenter(IOptions<CatalogImportOptions> configuration)
+        {
+            _configuration = configuration.Value;
+        }
+
         public void Execute(List<VideoSegmentQueueItem> videosToSegment)
         {
             var firstVideo = videosToSegment.First();
@@ -19,14 +28,14 @@ namespace CatalogManager.Segment
             foreach (var video in videosToSegment)
             {
                 var language = string.IsNullOrWhiteSpace(video.ArgLanguage) ? string.Empty : $",language={video.ArgLanguage}";
-                var videoInitFullName = Path.Combine(video.ArgInputFolder, video.ArgStreamFolder, @$"init.mp4");
-                var videoItemsFullName = Path.Combine(video.ArgInputFolder, video.ArgStreamFolder, @$"$Number$.m4s");
-                var inputFullName = Path.Combine(video.ArgInputFolder, video.ArgInputFile);
-                string fileToSegment = @$"'in=""{inputFullName}"",stream={video.ArgStreamId ?? video.ArgStream},init_segment=""{videoInitFullName}"",segment_template=""{videoItemsFullName}""{language}' ";
+                var videoInitFullName = Path.Combine(_configuration.ImportDirectory, video.ArgInputFolder, video.ArgStreamFolder, @$"init.mp4");
+                var videoItemsFullName = Path.Combine(_configuration.ImportDirectory, video.ArgInputFolder, video.ArgStreamFolder, @$"$Number$.m4s");
+                var inputFullName = Path.Combine(_configuration.ImportDirectory, video.ArgInputFolder, video.ArgInputFile);
+                string fileToSegment = @$"in=""{inputFullName}"",stream={video.ArgStreamId ?? video.ArgStream},init_segment=""{videoInitFullName}"",segment_template=""{videoItemsFullName}""{language} ";
                 args += fileToSegment;
             }
-            var dashFile = Path.Combine(firstVideo.ArgInputFolder, "dash.mpd");
-            var hlsFile = Path.Combine(firstVideo.ArgInputFolder, "hls.m3u8");
+            var dashFile = Path.Combine(_configuration.ImportDirectory, firstVideo.ArgInputFolder, "dash.mpd");
+            var hlsFile = Path.Combine(_configuration.ImportDirectory, firstVideo.ArgInputFolder, "hls.m3u8");
             args += @$"--generate_static_live_mpd --mpd_output ""{dashFile}"" --hls_master_playlist_output ""{hlsFile}"" ";
             args += @$"--default_language jpn --default_text_language eng"; // TODO - Make configurable
 

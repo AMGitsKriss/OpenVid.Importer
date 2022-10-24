@@ -26,7 +26,8 @@ namespace OpenVid.Importer
 
         public void Run(SegmentJobContext jobContext)
         {
-            _segmenter.Execute(jobContext.SegmentJob.VideoSegmentQueueItem.DistinctBy(i => new { i.ArgStream, i.ArgLanguage}).ToList());
+            var videoTracks = jobContext.SegmentJob.VideoSegmentQueueItem.DistinctBy(i => new { i.ArgInputFile, i.ArgLanguage }).ToList();
+            _segmenter.Execute(videoTracks);
             // TODO - Validate that the DASH and HLS files exist
 
             string md5;

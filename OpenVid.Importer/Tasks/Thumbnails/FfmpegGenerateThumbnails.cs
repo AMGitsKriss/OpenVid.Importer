@@ -8,11 +8,11 @@ namespace OpenVid.Importer.Tasks.Thumbnails
     {
         // TODO - Fix thumbnails. Test Videos:
         // 14680, 14657, 14560, 14232, 13102, 12044, 11959, 14743
-        public void Execute(string videoPath, string thumbPath, int framesIntoVideo)
+        public void Execute(string videoPath, string thumbPath)
         {
             Console.WriteLine("Generating thumbnail for file {0}", Path.GetFileNameWithoutExtension(videoPath));
 
-            var cmd = $" -y -itsoffset -1 -i \"{videoPath}\" -vcodec mjpeg -vframes {framesIntoVideo} -filter:v \"scale=300:168:force_original_aspect_ratio=decrease,pad=300:168:-1:-1:color=black\" \"{thumbPath}\"";
+            var cmd = $" -ss 5 -y -itsoffset -1 -i \"{videoPath}\" -vcodec mjpeg -frames:v 1 -filter:v \"scale=300:168:force_original_aspect_ratio=decrease,pad=300:168:-1:-1:color=black\" \"{thumbPath}\"";
 
             var startInfo = new ProcessStartInfo
             {

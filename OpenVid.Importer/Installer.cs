@@ -40,9 +40,11 @@ namespace OpenVid.Importer
 
         public static IConfigurationRoot LoadConfiguration()
         {
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            var configFileName = environment == null ? "appsettings.json" : $"appsettings.{environment}.json";
             var builder = new ConfigurationBuilder()
             .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+            .AddJsonFile(configFileName, optional: false, reloadOnChange: true);
 
             return builder.Build();
 

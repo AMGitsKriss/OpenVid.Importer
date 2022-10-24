@@ -32,6 +32,8 @@ namespace OpenVid.Importer
 
         public void Run(EncodeJobContext jobContext)
         {
+            FileHelpers.TouchDirectory(jobContext.FolderTranscoded);
+
             // TODO - Kaichou wa Maid-sama fails quietly
             _encoder.Execute(jobContext);
 
@@ -85,7 +87,7 @@ namespace OpenVid.Importer
 
             string thumbPath = Path.Combine(thumbDirectory, $"{jobContext.QueueItem.VideoId.ToString().PadLeft(2, '0')}.jpg");
             if (!File.Exists(thumbPath))
-                _generateThumbnails.Execute(jobContext.FileTranscoded, thumbPath, _configuration.ThumbnailFramesIntoVideo);
+                _generateThumbnails.Execute(jobContext.FileTranscoded, thumbPath);
         }
 
         private void SaveMp4Video(EncodeJobContext jobContext, VideoMetadata metadata)
@@ -136,7 +138,7 @@ namespace OpenVid.Importer
                 VideoSegmentQueueId = segmentJob.Id,
                 ArgStreamFolder = jobContext.QueueItem.MaxHeight.ToString(),
                 ArgInputFile = jobContext.QueueItem.OutputDirectory,
-                ArgInputFolder = jobContext.FolderPackager,
+                ArgInputFolder = jobContext.FolderRelativePackager,
                 ArgStream = "video"
             };
 

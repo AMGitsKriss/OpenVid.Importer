@@ -12,7 +12,10 @@ namespace OpenVid.Importer.Tasks.Encoder
             Console.WriteLine("Converting file {0}", jobContext.InputFileName);
 
             string exe = @"C:\handbrakecli\HandBrakeCLI.exe"; // TODO - [HandbrakeCLI] Should be configurable.What if I want to install this elsewhere?
-            string dimensionArgs = jobContext.QueueItem.IsVertical ? $" --maxWidth {jobContext.QueueItem.MaxHeight}" : $" --maxHeight {jobContext.QueueItem.MaxHeight}";
+            double sixteenNineRatio = 1.77777;
+            string vertDimensions = $" --maxWidth {jobContext.QueueItem.MaxHeight}  --maxHeight {Math.Ceiling(sixteenNineRatio * jobContext.QueueItem.MaxHeight)}";
+            string horizDimensions = $" --maxHeight {jobContext.QueueItem.MaxHeight} --maxWidth {Math.Ceiling(sixteenNineRatio * jobContext.QueueItem.MaxHeight)}";
+            string dimensionArgs = jobContext.QueueItem.IsVertical ? vertDimensions : horizDimensions;
             string args = $@" -i ""{jobContext.FileQueued}"" -o ""{jobContext.FileTranscoded}"" -e {jobContext.QueueItem.Encoder} --encoder-preset {jobContext.QueueItem.RenderSpeed} -f {jobContext.QueueItem.VideoFormat} --optimize --all-audio --all-subtitles -q {jobContext.QueueItem.Quality} {dimensionArgs}";
 
             Process proc = new Process();

@@ -11,6 +11,5 @@ namespace OpenVid.Importer
         public string BucketDirectory { get; set; }
         public string InternalUrl { get; set; }
         public string InternalDirectory { get; set; }
-        public int ThumbnailFramesIntoVideo { get; set; } = 60;
     }
 }

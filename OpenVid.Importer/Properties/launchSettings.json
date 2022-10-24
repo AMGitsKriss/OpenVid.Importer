@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "OpenVid.Importer": {
+      "commandName": "Project"
+    },
+    "Atlas": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Atlas"
+      }
+    }
+  }
+}

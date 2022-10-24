@@ -9,7 +9,7 @@ namespace OpenVid.Importer.Tasks.Metadata
     {
         public VideoMetadata Execute(string location)
         {
-            Console.WriteLine("Finding MetaDate for file {0}", Path.GetFileNameWithoutExtension(location));
+            Console.WriteLine("Finding MetaData for file {0}", Path.GetFileNameWithoutExtension(location));
             
             string cmd = $"-v error -select_streams v:0 -show_entries stream=width,height,duration -show_entries format=duration -of csv=s=x:p=0 \"{location}\"";
             Process proc = new Process();

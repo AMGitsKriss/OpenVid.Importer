@@ -45,7 +45,7 @@ namespace Database
 
         public VideoEncodeQueue GetNextPendingEncode()
         {
-            var sql = "SELECT TOP 1 * FROM VideoEncodeQueue WHERE IsDone = 0";
+            var sql = "SELECT TOP 1 * FROM VideoEncodeQueue WHERE IsDone = 0 ORDER BY videoID ASC, MaxHeight DESC";
             using var connection = _dbConnectionFactory.OpenDefault();
 
             var result = connection.Query<VideoEncodeQueue>(sql).FirstOrDefault();

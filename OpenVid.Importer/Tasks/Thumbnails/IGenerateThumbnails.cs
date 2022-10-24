@@ -2,6 +2,6 @@
 {
     public interface IGenerateThumbnails
     {
-        void Execute(string videoPath, string thumbPath, int framesIntoVideo);
+        void Execute(string videoPath, string thumbPath);
     }
 }
