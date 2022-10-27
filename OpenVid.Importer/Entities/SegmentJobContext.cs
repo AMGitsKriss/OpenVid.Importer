@@ -1,4 +1,5 @@
 ﻿using Database.Models;
+using OpenVid.Importer.Models;
 using System;
 using System.IO;
 using System.Linq;
@@ -27,7 +28,7 @@ namespace OpenVid.Importer.Entities
         {
             get
             {
-                return SegmentJob.VideoSegmentQueueItem.First().ArgInputFolder;
+                return Path.Combine(_configuration.ImportDirectory, SegmentJob.VideoSegmentQueueItem.First().ArgInputFolder);
             }
         }
 

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace OpenVid.Importer
+namespace OpenVid.Importer.Models
 {
     public class CatalogImportOptions
     {

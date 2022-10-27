@@ -1,4 +1,5 @@
 ﻿using Database.Models;
+using OpenVid.Importer.Models;
 using System.IO;
 
 namespace OpenVid.Importer.Entities

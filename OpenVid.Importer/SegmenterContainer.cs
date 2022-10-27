@@ -5,6 +5,7 @@ using Database.Models;
 using Microsoft.Extensions.Options;
 using OpenVid.Importer.Entities;
 using OpenVid.Importer.Helpers;
+using OpenVid.Importer.Models;
 using System;
 using System.IO;
 using System.Linq;
@@ -26,7 +27,7 @@ namespace OpenVid.Importer
 
         public void Run(SegmentJobContext jobContext)
         {
-            var videoTracks = jobContext.SegmentJob.VideoSegmentQueueItem.DistinctBy(i => new { i.ArgInputFile, i.ArgLanguage }).ToList();
+            var videoTracks = jobContext.SegmentJob.VideoSegmentQueueItem.DistinctBy(i => new { i.ArgStreamFolder }).ToList();
             _segmenter.Execute(videoTracks);
             // TODO - Validate that the DASH and HLS files exist
 
@@ -62,7 +63,7 @@ namespace OpenVid.Importer
                 {
                     // TODO - Only removed while testing
                     // TODO - Make configurable?
-                    File.Delete(Path.Combine(jobContext.WorkingDirectory, item.ArgInputFile)); 
+                    File.Delete(Path.Combine(jobContext.WorkingDirectory, item.ArgInputFile));
                 }
                 catch (Exception ex)
                 {

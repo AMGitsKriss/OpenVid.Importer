@@ -4,6 +4,7 @@ using Database.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenVid.Importer.Models;
 using OpenVid.Importer.Tasks.AudioTracks;
 using OpenVid.Importer.Tasks.Encoder;
 using OpenVid.Importer.Tasks.Metadata;

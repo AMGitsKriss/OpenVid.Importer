@@ -45,7 +45,7 @@ namespace OpenVid.Importer
             {
                 try
                 {
-                    File.Delete(jobContext.FileIngest);
+                    File.Delete(jobContext.FileQueued);
                 }
                 catch (Exception ex)
                 {

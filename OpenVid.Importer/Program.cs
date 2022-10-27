@@ -3,6 +3,7 @@ using Database.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using OpenVid.Importer.Entities;
+using OpenVid.Importer.Models;
 
 namespace OpenVid.Importer
 {

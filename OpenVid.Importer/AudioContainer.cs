@@ -19,7 +19,7 @@ namespace OpenVid.Importer
 
         public void Run(SegmentJobContext jobContext)
         {
-            var videoStream = jobContext.SegmentJob.VideoSegmentQueueItem.First(i => i.ArgStream == "video");
+            var videoStream = jobContext.SegmentJob.VideoSegmentQueueItem.Where(i => i.ArgStream == "video").OrderByDescending(i => int.Parse(i.ArgStreamFolder)).First();
             var audioStreams = _trackFinder.Execute(videoStream);
 
             if (!audioStreams.Any())

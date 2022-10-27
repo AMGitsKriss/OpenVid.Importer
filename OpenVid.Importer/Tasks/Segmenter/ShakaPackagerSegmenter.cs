@@ -1,6 +1,6 @@
 ﻿using Database.Models;
 using Microsoft.Extensions.Options;
-using OpenVid.Importer;
+using OpenVid.Importer.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,7 +20,7 @@ namespace CatalogManager.Segment
 
         public void Execute(List<VideoSegmentQueueItem> videosToSegment)
         {
-            var firstVideo = videosToSegment.First();
+            var firstVideo = videosToSegment.First(i => i.ArgStream == "video");
             Console.WriteLine("Segmenting file {0}", Path.GetFileNameWithoutExtension(firstVideo.ArgInputFile));
             var exe = @"c:\shaka-packager\packager.exe";
             var args = string.Empty;
