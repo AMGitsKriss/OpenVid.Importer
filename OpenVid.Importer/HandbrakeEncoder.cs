@@ -13,7 +13,7 @@ using OpenVid.Importer.Entities;
 
 namespace OpenVid.Importer
 {
-    public class EncoderContainer
+    public class HandbrakeEncoder
     {
         private readonly IVideoRepository _repository;
         private readonly IEncoder _encoder;
@@ -21,7 +21,7 @@ namespace OpenVid.Importer
         private readonly IGenerateThumbnails _generateThumbnails;
         private readonly CatalogImportOptions _configuration;
 
-        public EncoderContainer(IVideoRepository repository, IEncoder encoder, IFindMetadata metadata, IGenerateThumbnails generateThumbnails, IOptions<CatalogImportOptions> configuration)
+        public HandbrakeEncoder(IVideoRepository repository, IEncoder encoder, IFindMetadata metadata, IGenerateThumbnails generateThumbnails, IOptions<CatalogImportOptions> configuration)
         {
             _repository = repository;
             _encoder = encoder;
@@ -33,6 +33,10 @@ namespace OpenVid.Importer
         public void Run(EncodeJobContext jobContext)
         {
             FileHelpers.TouchDirectory(jobContext.FolderTranscoded);
+
+            var srcMetaData = _metadata.Execute(jobContext.FileQueued);
+            jobContext.SourceWidth = srcMetaData.Width;
+            jobContext.SourceHeight = srcMetaData.Height;
 
             // TODO - Kaichou wa Maid-sama fails quietly
             _encoder.Execute(jobContext);

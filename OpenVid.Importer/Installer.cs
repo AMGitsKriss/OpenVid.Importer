@@ -19,7 +19,7 @@ namespace OpenVid.Importer
             var configuration = LoadConfiguration();
             return new ServiceCollection()
                 .AddOptions()
-                .AddScoped<EncoderContainer>()
+                .AddScoped<HandbrakeEncoder>()
                 .AddScoped<AudioContainer>()
                 .AddScoped<SegmenterContainer>()
 

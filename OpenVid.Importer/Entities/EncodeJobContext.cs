@@ -97,5 +97,9 @@ namespace OpenVid.Importer.Entities
 
         public string OutputFileName => Path.GetFileNameWithoutExtension(QueueItem.OutputDirectory);
         public string OutputExtension => Path.GetExtension(QueueItem.OutputDirectory);
+
+        public double SourceWidth { get; set; }
+        public double SourceHeight { get; set; }
+        public double SourceAspectRatio => (SourceWidth / SourceHeight);
     }
 }

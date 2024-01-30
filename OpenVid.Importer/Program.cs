@@ -10,7 +10,7 @@ namespace OpenVid.Importer
     class Program
     {
         private static IVideoRepository _repository;
-        private static EncoderContainer _encoderService;
+        private static HandbrakeEncoder _encoderService;
         private static AudioContainer _audioService;
         private static SegmenterContainer _segmenter;
         private static CatalogImportOptions _configuration;
@@ -22,21 +22,23 @@ namespace OpenVid.Importer
             VideoEncodeQueue pendingEncodeJob;
             while ((pendingEncodeJob = _repository.GetNextPendingEncode()) != null)
             {
-                var jobContext = new EncodeJobContext(_configuration, pendingEncodeJob);
-                _encoderService.Run(jobContext);
+                var currentJob = new EncodeJobContext(_configuration, pendingEncodeJob);
+                _encoderService.Run(currentJob);
             }
 
             VideoSegmentQueue pendingSegmentJob;
             while ((pendingSegmentJob = _repository.GetNextPendingSegment()) != null)
             {
-                var jobContext = new SegmentJobContext(_configuration, pendingSegmentJob);
-                if (!jobContext.HasAudioTracks)
+                var currentSegment = new SegmentJobContext(_configuration, pendingSegmentJob);
+
+                // not all video has audio
+                if (!currentSegment.HasAudioTracks)
                 {
-                    _audioService.Run(jobContext);
-                    jobContext.SegmentJob = _repository.GetNextPendingSegment(); // Refresh the object
+                    _audioService.Run(currentSegment);
+                    currentSegment.SegmentJob = _repository.GetNextPendingSegment(); // Refresh the object
                 }
 
-                _segmenter.Run(jobContext);
+                _segmenter.Run(currentSegment);
             }
         }
 
@@ -44,7 +46,7 @@ namespace OpenVid.Importer
         {
             var serviceProvider = Installer.LoadServiceCollection();
             _repository = serviceProvider.GetService<IVideoRepository>();
-            _encoderService = serviceProvider.GetService<EncoderContainer>();
+            _encoderService = serviceProvider.GetService<HandbrakeEncoder>();
             _audioService = serviceProvider.GetService<AudioContainer>();
             _segmenter = serviceProvider.GetService<SegmenterContainer>();
             _configuration = serviceProvider.GetService<IOptions<CatalogImportOptions>>().Value;
