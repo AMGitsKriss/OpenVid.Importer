@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OpenVid.Importer.Models
+namespace Common
 {
     public class VideoMetadata
     {

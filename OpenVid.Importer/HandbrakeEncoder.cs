@@ -5,23 +5,24 @@ using System.IO;
 using System.Linq;
 using System;
 using OpenVid.Importer.Tasks.Thumbnails;
-using OpenVid.Importer.Tasks.Metadata;
-using OpenVid.Importer.Models;
 using OpenVid.Importer.Helpers;
-using OpenVid.Importer.Tasks.Encoder;
-using OpenVid.Importer.Entities;
+using Common;
+using Common.Entities;
+using Handbrake.Handler;
+using Ffmpeg.Handler;
+using System.Threading.Tasks;
 
 namespace OpenVid.Importer
 {
-    public class HandbrakeEncoder
+    public class HandbrakeHandler
     {
         private readonly IVideoRepository _repository;
         private readonly IEncoder _encoder;
-        private readonly IFindMetadata _metadata;
+        private readonly MetadataExtractor _metadata;
         private readonly IGenerateThumbnails _generateThumbnails;
         private readonly CatalogImportOptions _configuration;
 
-        public HandbrakeEncoder(IVideoRepository repository, IEncoder encoder, IFindMetadata metadata, IGenerateThumbnails generateThumbnails, IOptions<CatalogImportOptions> configuration)
+        public HandbrakeHandler(IVideoRepository repository, IEncoder encoder, MetadataExtractor metadata, IGenerateThumbnails generateThumbnails, IOptions<CatalogImportOptions> configuration)
         {
             _repository = repository;
             _encoder = encoder;
@@ -30,31 +31,36 @@ namespace OpenVid.Importer
             _configuration = configuration.Value;
         }
 
-        public void Run(EncodeJobContext jobContext)
+        public async Task<bool> Run(EncodeJobContext jobContext)
         {
+            Console.WriteLine($"Step 2 - Transcoding {jobContext.FileIngest} to {jobContext.FileTranscoded}.");
+
             FileHelpers.TouchDirectory(jobContext.FolderTranscoded);
 
-            var srcMetaData = _metadata.Execute(jobContext.FileQueued);
+            var mediaInfo = await _metadata.Extract(jobContext.FileQueued);
+            var srcMetaData = _metadata.GetMetadata(mediaInfo);
             jobContext.SourceWidth = srcMetaData.Width;
             jobContext.SourceHeight = srcMetaData.Height;
 
             // TODO - Kaichou wa Maid-sama fails quietly
-            _encoder.Execute(jobContext);
+            if (!await _encoder.Execute(jobContext))
+                return false;
 
-            // If getting metadata works, then we know the file exists
-            var metadata = _metadata.Execute(jobContext.FileTranscoded);
+            // Metadata for the new transcoded video
+            var transcodedMediaInfo = await _metadata.Extract(jobContext.FileTranscoded);
+            var transcodedMetadata = _metadata.GetMetadata(mediaInfo);
 
-            // Remove the old file
-            if (!_repository.IsFileStillNeeded(jobContext.QueueItem.VideoId))
+            try
             {
-                try
+                // Remove the old file
+                if (!_repository.IsFileStillNeeded(jobContext.QueueItem.VideoId, jobContext.QueueItem.Id))
                 {
                     File.Delete(jobContext.FileQueued);
                 }
-                catch (Exception ex)
-                {
-                    var msg = ex.Message;
-                }
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.Message;
             }
 
             CreateThumbnail(jobContext);
@@ -67,7 +73,7 @@ namespace OpenVid.Importer
                 // Write the new source entry
                 if (job.QueueItem.PlaybackFormat == "mp4")
                 {
-                    SaveMp4Video(job, metadata);
+                    SaveMp4Video(job, transcodedMetadata);
                 }
                 else if (job.QueueItem.PlaybackFormat == "dash")
                 {
@@ -80,6 +86,7 @@ namespace OpenVid.Importer
                 _repository.SaveEncodeJob(job.QueueItem);
             }
             File.Delete(jobContext.FileTranscoded);
+            return true;
         }
 
 
@@ -119,7 +126,7 @@ namespace OpenVid.Importer
         private void CopyDashVideoAwaitingPackager(EncodeJobContext jobContext)
         {
             FileHelpers.TouchDirectory(jobContext.FolderPackager);
-            File.Copy(jobContext.FileTranscoded, jobContext.FilePackager);
+            File.Copy(jobContext.FileTranscoded, jobContext.FilePackager, true);
         }
 
         private void AddToSegmentQueue(EncodeJobContext jobContext)

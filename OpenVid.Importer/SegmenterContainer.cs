@@ -1,11 +1,10 @@
 ﻿using CatalogManager.Segment;
+using Common;
 using Database;
-using Database.Extensions;
 using Database.Models;
 using Microsoft.Extensions.Options;
 using OpenVid.Importer.Entities;
 using OpenVid.Importer.Helpers;
-using OpenVid.Importer.Models;
 using System;
 using System.IO;
 using System.Linq;

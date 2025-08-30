@@ -1,14 +1,17 @@
 ﻿using CatalogManager.Segment;
+using Common;
 using Database;
 using Database.Models;
+using Ffmpeg.Handler;
+using Handbrake.Handler;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using OpenVid.Importer.Models;
 using OpenVid.Importer.Tasks.AudioTracks;
-using OpenVid.Importer.Tasks.Encoder;
-using OpenVid.Importer.Tasks.Metadata;
+using OpenVid.Importer.Tasks.Ingest;
 using OpenVid.Importer.Tasks.Thumbnails;
+using Serilog;
+using Serilog.Events;
 using System;
 namespace OpenVid.Importer
 {
@@ -19,23 +22,24 @@ namespace OpenVid.Importer
             var configuration = LoadConfiguration();
             return new ServiceCollection()
                 .AddOptions()
-                .AddScoped<HandbrakeEncoder>()
+                .AddScoped<HandbrakeHandler>()
                 .AddScoped<AudioContainer>()
                 .AddScoped<SegmenterContainer>()
 
                 .AddScoped<IFindAudioTracks, ShakaPackagerFindAudioTracks>()
-                //.AddScoped<IFindAudioTracks, FfmpegFindAudioTracks>()
-                .AddScoped<IFindMetadata, FfmpegFindMetadata>()
+                .AddScoped<MetadataExtractor>()
                 .AddScoped<IGenerateThumbnails, FfmpegGenerateThumbnails>()
-                .AddScoped<IEncoder, HandbrakeEncoder>()
+                .AddScoped<IEncoder, HandbrakeLibraryEncoder>()
                 .AddScoped<ISegmenter, ShakaPackagerSegmenter>()
+                .AddScoped<SubtitleExtractor>()
+                .AddScoped<IngestService>()
 
                 .Configure<ConnectionStringOptions>(configuration.GetSection("ConnectionStrings"))
                 .Configure<CatalogImportOptions>(configuration.GetSection("Catalog"))
                 .AddDbContext<OpenVidContext>(o => o.UseSqlServer(configuration.GetConnectionString("DefaultDatabase")))
                 .AddScoped<IDbConnectionFactory, DbConnectionFactory>()
                 .AddScoped<IVideoRepository, VideoRepository>()
-
+                .AddSerilog(configuration)
                 .BuildServiceProvider();
         }
 
@@ -49,6 +53,23 @@ namespace OpenVid.Importer
 
             return builder.Build();
 
+        }
+
+        public static IServiceCollection AddSerilog(this IServiceCollection services, IConfigurationRoot configuration)
+        {
+            var loggerConfig = new LoggerConfiguration();
+            loggerConfig.WriteTo.Seq("http://localhost:5341/", apiKey: "lAr93RAGSr1iILEr1Kta");
+            loggerConfig.WriteTo.Console();
+            loggerConfig.MinimumLevel.Override("Microsoft", LogEventLevel.Error);
+            loggerConfig.MinimumLevel.Override("System", LogEventLevel.Error);
+            loggerConfig.Enrich.WithProperty("Application", configuration["Logging:Application:Name"] ?? "OpenVid.Importer");
+            loggerConfig.Enrich.FromLogContext();
+
+            ILogger logger = loggerConfig.CreateLogger();
+
+            services.AddSingleton(logger);
+
+            return services;
         }
     }
 }

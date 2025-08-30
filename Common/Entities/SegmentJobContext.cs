@@ -1,8 +1,5 @@
-﻿using Database.Models;
-using OpenVid.Importer.Models;
-using System;
-using System.IO;
-using System.Linq;
+﻿using Common;
+using Database.Models;
 
 namespace OpenVid.Importer.Entities
 {

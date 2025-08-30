@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Database.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -145,10 +146,10 @@ namespace Database
 
 
         [Obsolete]
-        public bool IsFileStillNeeded(int videoId)
+        public bool IsFileStillNeeded(int videoId, int queueItemId)
         {
             return _context.VideoEncodeQueue.Any(v =>
-                v.VideoId == videoId &&
+                v.VideoId == videoId && v.Id != queueItemId &&
                 !v.IsDone);
         }
 
@@ -185,6 +186,86 @@ namespace Database
                 queueItem.RenderSpeed,
                 queueItem.Encoder,
             });
+
+            return result.ToList();
+        }
+
+        public virtual bool DeleteVideo(int id)
+        {
+            Video video = GetVideo(id);
+
+            _context.Video.Remove(video);
+
+            _context.SaveChanges();
+
+            return true;
+        }
+
+        public Video GetVideo(int id)
+        {
+            return GetAllVideos().Include(x => x.VideoSource).Include(x => x.VideoTag).ThenInclude(x => x.Tag).Include(x => x.VideoEncodeQueue).Include(x => x.VideoSegmentQueue).Include(x => x.VideoSegmentQueueItem).FirstOrDefault(x => x.Id == id);
+        }
+
+        public IQueryable<Video> GetAllVideos()
+        {
+            return _context.Video.Include(v => v.VideoSource);
+        }
+
+        public IQueryable<Tag> DefineTags(List<string> tags)
+        {
+            try
+            {
+                var existingTags = _context.Tag.Select(x => x.Name.ToLower());
+
+                foreach (var unsafeTag in tags)
+                {
+                    string tag = unsafeTag.Trim().ToLower();
+                    if (!existingTags.Contains(tag))
+                    {
+                        _context.Tag.Add(new Tag() { Name = tag, Type = 1 });
+                    }
+                }
+                _context.SaveChanges();
+
+                var tagsInDatabase = _context.Tag.Where(x => tags.Contains(x.Name));
+                return tagsInDatabase;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public Video SaveVideo(Video video)
+        {
+            try
+            {
+                if (video.Id == 0)
+                {
+                    _context.Video.Add(video);
+                }
+                else
+                {
+                    _context.Video.Update(video);
+                }
+
+                var updateCount = _context.SaveChanges();
+
+                return video;
+            }
+            catch (Exception ex)
+            {
+                var test = ex.Message;
+                throw ex;
+            }
+        }
+
+        public IEnumerable<string> GetAllTags()
+        {
+            var sql = "SELECT Name FROM Tag";
+            using var connection = _dbConnectionFactory.OpenDefault();
+
+            var result = connection.Query<string>(sql);
 
             return result.ToList();
         }

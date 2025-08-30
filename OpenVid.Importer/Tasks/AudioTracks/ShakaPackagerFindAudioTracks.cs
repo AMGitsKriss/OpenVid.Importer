@@ -1,5 +1,5 @@
-﻿using Database.Models;
-using OpenVid.Importer.Models;
+﻿using Common;
+using Database.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

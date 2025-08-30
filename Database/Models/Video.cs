@@ -27,5 +27,6 @@ namespace Database.Models
         public virtual ICollection<VideoSegmentQueue> VideoSegmentQueue { get; set; }
         public virtual ICollection<VideoSegmentQueueItem> VideoSegmentQueueItem { get; set; }
         public virtual ICollection<VideoSource> VideoSource { get; set; }
+        public virtual ICollection<VideoTag> VideoTag { get; set; }
     }
 }

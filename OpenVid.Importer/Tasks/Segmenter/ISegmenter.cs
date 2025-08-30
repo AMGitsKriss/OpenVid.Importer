@@ -1,5 +1,4 @@
 ﻿using Database.Models;
-using OpenVid.Importer.Models;
 using System.Collections.Generic;
 
 namespace CatalogManager.Segment

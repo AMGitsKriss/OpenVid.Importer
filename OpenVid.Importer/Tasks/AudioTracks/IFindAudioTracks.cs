@@ -1,5 +1,5 @@
-﻿using Database.Models;
-using OpenVid.Importer.Models;
+﻿using Common;
+using Database.Models;
 using System.Collections.Generic;
 
 namespace OpenVid.Importer.Tasks.AudioTracks

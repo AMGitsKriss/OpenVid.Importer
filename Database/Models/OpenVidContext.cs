@@ -24,6 +24,8 @@ namespace Database.Models
         public virtual DbSet<VideoSegmentQueue> VideoSegmentQueue { get; set; }
         public virtual DbSet<VideoSegmentQueueItem> VideoSegmentQueueItem { get; set; }
         public virtual DbSet<VideoSource> VideoSource { get; set; }
+        public virtual DbSet<VideoTag> VideoTag { get; set; }
+        public virtual DbSet<Tag> Tag { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -173,8 +175,47 @@ namespace Database.Models
                     .HasConstraintName("FK_VideoSource_Video");
             });
 
+            modelBuilder.Entity<Tag>(entity =>
+            {
+                entity.Property(e => e.Id).HasColumnName("ID");
+
+                entity.Property(e => e.Description).IsUnicode(false);
+
+                entity.Property(e => e.Type).IsRequired(true);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.ShortCode)
+                    .HasMaxLength(100)
+                    .IsUnicode(false);
+            });
+
+
+            modelBuilder.Entity<VideoTag>(entity =>
+            {
+                entity.HasKey(e => new { e.VideoId, e.TagId });
+
+                entity.Property(e => e.VideoId).HasColumnName("VideoID");
+
+                entity.Property(e => e.TagId).HasColumnName("TagID");
+
+                entity.HasOne(d => d.Tag)
+                    .WithMany(p => p.VideoTag)
+                    .HasForeignKey(d => d.TagId)
+                    .HasConstraintName("FK_VideoTag_Tag");
+
+                entity.HasOne(d => d.Video)
+                    .WithMany(p => p.VideoTag)
+                    .HasForeignKey(d => d.VideoId)
+                    .HasConstraintName("FK_VideoTag_VideoID");
+            });
+
             OnModelCreatingPartial(modelBuilder);
         }
+
 
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
     }

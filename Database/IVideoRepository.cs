@@ -14,10 +14,16 @@ namespace Database
         bool SaveEncodeJob(VideoEncodeQueue encodeJob);
         bool SaveSegmentJob(VideoSegmentQueue segmentJob);
         bool SaveSegmentItem(VideoSegmentQueueItem segmentJob);
-        bool IsFileStillNeeded(int videoId);
+        bool IsFileStillNeeded(int videoId, int queueItemId);
         void SetPendingSegmentingDone(int videoId);
         IQueryable<VideoSegmentQueue> GetSegmentJobsForVideo(int videoId);
         VideoSegmentQueue GetNextPendingSegment();
         List<VideoEncodeQueue> GetSimilarEncodeJobs(VideoEncodeQueue queueItem);
+        bool DeleteVideo(int id);
+        IQueryable<Video> GetAllVideos();
+        Video GetVideo(int id);
+        IQueryable<Tag> DefineTags(List<string> tags);
+        Video SaveVideo(Video video);
+        IEnumerable<string> GetAllTags();
     }
 }

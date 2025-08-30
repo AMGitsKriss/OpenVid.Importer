@@ -1,4 +1,4 @@
-﻿namespace OpenVid.Importer.Models
+﻿namespace Common
 {
     public class AudioTrack
     {

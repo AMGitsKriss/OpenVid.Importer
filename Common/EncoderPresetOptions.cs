@@ -1,4 +1,4 @@
-﻿namespace OpenVid.Importer
+﻿namespace Common
 {
     public class EncoderPresetOptions
     {

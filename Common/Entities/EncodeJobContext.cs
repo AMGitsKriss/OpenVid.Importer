@@ -1,8 +1,6 @@
 ﻿using Database.Models;
-using OpenVid.Importer.Models;
-using System.IO;
 
-namespace OpenVid.Importer.Entities
+namespace Common.Entities
 {
     public class EncodeJobContext
     {
@@ -100,6 +98,6 @@ namespace OpenVid.Importer.Entities
 
         public double SourceWidth { get; set; }
         public double SourceHeight { get; set; }
-        public double SourceAspectRatio => (SourceWidth / SourceHeight);
+        public double SourceAspectRatio => SourceWidth / SourceHeight;
     }
 }
