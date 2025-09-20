@@ -1,6 +1,3 @@
-using Moq;
-using Serilog;
-
 namespace Ffmpeg.Handler.Tests
 {
     public class SubtitleTests

@@ -42,5 +42,13 @@ namespace OpenVid.Importer.Helpers
             }
 
         }
+        public static string FileDirPath(string bucketDir, string md5, string extension)
+        {
+            string vidSubFolder = md5.Substring(0, 2);
+            string videoDirectory = Path.Combine(bucketDir, "video", vidSubFolder);
+            TouchDirectory(videoDirectory);
+            string videoBucketDirectory = Path.Combine(videoDirectory, $"{md5}{extension}");
+            return videoBucketDirectory;
+        }
     }
 }

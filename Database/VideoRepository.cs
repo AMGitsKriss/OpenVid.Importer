@@ -146,7 +146,7 @@ namespace Database
 
 
         [Obsolete]
-        public bool IsFileStillNeeded(int videoId, int queueItemId)
+        public bool IsSourceFileStillNeeded(int videoId, int queueItemId)
         {
             return _context.VideoEncodeQueue.Any(v =>
                 v.VideoId == videoId && v.Id != queueItemId &&
@@ -176,10 +176,11 @@ namespace Database
 
         public List<VideoEncodeQueue> GetSimilarEncodeJobs(VideoEncodeQueue queueItem)
         {
-            var sql = "SELECT * FROM VideoEncodeQueue WHERE IsDone = 0 AND VideoId = @VideoId AND Quality = @Quality AND MaxHeight = @MaxHeight AND RenderSpeed = @RenderSpeed AND Encoder = @Encoder";
+            var sql = "SELECT * FROM VideoEncodeQueue WHERE Id != @Id AND IsDone = 0 AND VideoId = @VideoId AND Quality = @Quality AND MaxHeight = @MaxHeight AND RenderSpeed = @RenderSpeed AND Encoder = @Encoder";
             using var connection = _dbConnectionFactory.OpenDefault();
 
             var result = connection.Query<VideoEncodeQueue>(sql, new {
+                queueItem.Id,
                 queueItem.VideoId,
                 queueItem.Quality,
                 queueItem.MaxHeight,

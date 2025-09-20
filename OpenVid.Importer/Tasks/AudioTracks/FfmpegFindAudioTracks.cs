@@ -6,11 +6,19 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
 
 namespace OpenVid.Importer.Tasks.AudioTracks
 {
     public class FfmpegFindAudioTracks : IFindAudioTracks
     {
+        private readonly ComponentOptions _options;
+
+        FfmpegFindAudioTracks(IOptions<ComponentOptions> options)
+        {
+            _options = options.Value;
+        }
+
         public List<AudioTrack> Execute(VideoSegmentQueueItem video)
         {
             var source = Path.Combine(video.ArgInputFolder, video.ArgInputFile);
@@ -18,7 +26,7 @@ namespace OpenVid.Importer.Tasks.AudioTracks
 
             string args = $"-i \"{source}\"";
             Process proc = new Process();
-            proc.StartInfo.FileName = @"c:\ffmpeg\ffmpeg.exe";
+            proc.StartInfo.FileName = _options.Ffmpeg;
             proc.StartInfo.Arguments = args;
             proc.StartInfo.CreateNoWindow = false;
             proc.StartInfo.RedirectStandardOutput = true;

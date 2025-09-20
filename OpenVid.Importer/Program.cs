@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using OpenVid.Importer.Entities;
 using OpenVid.Importer.Tasks.Ingest;
+using Serilog;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace OpenVid.Importer
@@ -18,6 +20,7 @@ namespace OpenVid.Importer
         private static SegmenterContainer _segmenter;
         private static CatalogImportOptions _configuration;
         private static IngestService _ingest;
+        private static ILogger _logger;
 
         static async Task Main(string[] args)
         {
@@ -32,10 +35,20 @@ namespace OpenVid.Importer
             VideoEncodeQueue pendingEncodeJob;
             while ((pendingEncodeJob = _repository.GetNextPendingEncode()) != null)
             {
-                // TODO - Kill HandbrakeCLI.exe on exit
                 var currentJob = new EncodeJobContext(_configuration, pendingEncodeJob);
-                if (!await _encoderService.Run(currentJob))
-                    break;
+                if (File.Exists(currentJob.FileQueued))
+                {
+                    //currentJob.QueueItem.OutputDirectory = currentJob.QueueItem.OutputDirectory.Replace("webm", "mp4");
+                    if (!await _encoderService.Run(currentJob))
+                        break;
+                    // TODO - Kill HandbrakeCLI.exe on exit
+                }
+                else
+                {
+                    _logger.Error($"VideoId: {pendingEncodeJob.VideoId} was missing the file: {currentJob.FileIngest}. Marking as done and skipping. Not tidying up import directories.");
+                    pendingEncodeJob.IsDone = true;
+                    _repository.SaveEncodeJob(pendingEncodeJob);
+                }
             }
 
             // Step 3 - Do video segmenting for HLS/DASH
@@ -65,6 +78,7 @@ namespace OpenVid.Importer
             _segmenter = serviceProvider.GetService<SegmenterContainer>();
             _configuration = serviceProvider.GetService<IOptions<CatalogImportOptions>>().Value;
             _ingest = serviceProvider.GetService<IngestService>();
+            _logger = serviceProvider.GetService<ILogger>();
         }
     }
 }

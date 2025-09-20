@@ -33,10 +33,15 @@ namespace OpenVid.Importer
                 .AddScoped<ISegmenter, ShakaPackagerSegmenter>()
                 .AddScoped<SubtitleExtractor>()
                 .AddScoped<IngestService>()
+                .AddSingleton<ITranscodeWrapper, TranscodeWrapper>()
 
                 .Configure<ConnectionStringOptions>(configuration.GetSection("ConnectionStrings"))
                 .Configure<CatalogImportOptions>(configuration.GetSection("Catalog"))
-                .AddDbContext<OpenVidContext>(o => o.UseSqlServer(configuration.GetConnectionString("DefaultDatabase")))
+                .Configure<ComponentOptions>(configuration.GetSection("Components"))
+                .AddDbContext<OpenVidContext>(o => {
+                    o.UseSqlServer(configuration.GetConnectionString("DefaultDatabase"));
+                    o.EnableSensitiveDataLogging(true);
+                }) //DbContextOptionsBuilder.EnableSensitiveDataLogging
                 .AddScoped<IDbConnectionFactory, DbConnectionFactory>()
                 .AddScoped<IVideoRepository, VideoRepository>()
                 .AddSerilog(configuration)

@@ -11,19 +11,25 @@ using Common.Entities;
 using Handbrake.Handler;
 using Ffmpeg.Handler;
 using System.Threading.Tasks;
+using Microsoft.VisualBasic.FileIO;
+using System.Security.Cryptography;
+using Serilog;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace OpenVid.Importer
 {
     public class HandbrakeHandler
     {
+        private readonly ILogger _logger;
         private readonly IVideoRepository _repository;
         private readonly IEncoder _encoder;
         private readonly MetadataExtractor _metadata;
         private readonly IGenerateThumbnails _generateThumbnails;
         private readonly CatalogImportOptions _configuration;
 
-        public HandbrakeHandler(IVideoRepository repository, IEncoder encoder, MetadataExtractor metadata, IGenerateThumbnails generateThumbnails, IOptions<CatalogImportOptions> configuration)
+        public HandbrakeHandler(ILogger logger, IVideoRepository repository, IEncoder encoder, MetadataExtractor metadata, IGenerateThumbnails generateThumbnails, IOptions<CatalogImportOptions> configuration)
         {
+            _logger = logger;
             _repository = repository;
             _encoder = encoder;
             _metadata = metadata;
@@ -42,31 +48,26 @@ namespace OpenVid.Importer
             jobContext.SourceWidth = srcMetaData.Width;
             jobContext.SourceHeight = srcMetaData.Height;
 
+            var startTime = DateTime.Now;
+            var inputSize = new System.IO.FileInfo(jobContext.FileQueued).Length;
+            var inputMPixels = srcMetaData.Width * srcMetaData.Height;
+
             // TODO - Kaichou wa Maid-sama fails quietly
             if (!await _encoder.Execute(jobContext))
                 return false;
 
             // Metadata for the new transcoded video
             var transcodedMediaInfo = await _metadata.Extract(jobContext.FileTranscoded);
-            var transcodedMetadata = _metadata.GetMetadata(mediaInfo);
+            var transcodedMetadata = _metadata.GetMetadata(transcodedMediaInfo);
 
-            try
-            {
-                // Remove the old file
-                if (!_repository.IsFileStillNeeded(jobContext.QueueItem.VideoId, jobContext.QueueItem.Id))
-                {
-                    File.Delete(jobContext.FileQueued);
-                }
-            }
-            catch (Exception ex)
-            {
-                var msg = ex.Message;
-            }
+            CreateThumbnail(jobContext, transcodedMetadata);
 
-            CreateThumbnail(jobContext);
+            // Mark as done before looping
+            jobContext.QueueItem.IsDone = true;
+            _repository.SaveEncodeJob(jobContext.QueueItem);
+            SaveMp4Video(jobContext, transcodedMetadata);
 
             var jobsWithThisQuality = _repository.GetSimilarEncodeJobs(jobContext.QueueItem);
-
 
             foreach (var job in jobsWithThisQuality.Select(j => new EncodeJobContext(_configuration, j)))
             {
@@ -81,24 +82,61 @@ namespace OpenVid.Importer
                     AddToSegmentQueue(job);
                 }
 
-                // Mark as done before looping
-                job.QueueItem.IsDone = true;
-                _repository.SaveEncodeJob(job.QueueItem);
+                jobContext.QueueItem.IsDone = true;
+                _repository.SaveEncodeJob(jobContext.QueueItem);
             }
+
+            try
+            {
+                // Remove the old file
+                var outputPath = FileHelpers.FileDirPath(_configuration.BucketDirectory, FileHelpers.GenerateHash(jobContext.FileTranscoded), jobContext.OutputExtension);
+                if (!_repository.IsSourceFileStillNeeded(jobContext.QueueItem.VideoId, jobContext.QueueItem.Id)
+                    && File.Exists(outputPath))
+                {
+                    FileSystem.DeleteFile(jobContext.FileQueued, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                    //File.Delete(jobContext.FileQueued);
+                }
+                else if(!File.Exists(outputPath))
+                {
+                    _logger.Error($"The file {jobContext.InputFileName} was expected to be copied to {outputPath}, but it was not found in the destination. Deletion of WIP file skipped.");
+                }
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.Message;
+            }
+
+            // We don't need the temp one anymore, we'e copied the temp file to another folder for segmenting
+            var outputSize = new System.IO.FileInfo(jobContext.FileTranscoded).Length;
+            var outputMPixels = transcodedMetadata.Width * transcodedMetadata.Height;
+            var timeTaken = DateTime.Now - startTime;
+            _logger.Information($"Video {jobContext.QueueItem.VideoId} | Duration: {transcodedMetadata.Duration} | Size: {inputSize} to {outputSize} | MPixels: {inputMPixels} to {outputMPixels} | Took: {timeTaken}");
+
             File.Delete(jobContext.FileTranscoded);
+
             return true;
         }
 
 
-        private void CreateThumbnail(EncodeJobContext jobContext)
+        private void CreateThumbnail(EncodeJobContext jobContext, VideoMetadata transcodedMetadata)
         {
             string thumbSubFolder = jobContext.QueueItem.VideoId.ToString().PadLeft(2, '0').Substring(0, 2);
             string thumbDirectory = Path.Combine(_configuration.BucketDirectory, "thumbnail", thumbSubFolder);
             FileHelpers.TouchDirectory(thumbDirectory);
 
+            var start = 0d;
+            if (transcodedMetadata.Duration.TotalMinutes > 1)
+                start = 5 + transcodedMetadata.Duration.TotalMinutes;
+            else
+            {
+                start = transcodedMetadata.Duration.TotalSeconds / 15d;
+            }
+
+            var thumbTimespan = TimeSpan.FromSeconds(start);
+
             string thumbPath = Path.Combine(thumbDirectory, $"{jobContext.QueueItem.VideoId.ToString().PadLeft(2, '0')}.jpg");
             if (!File.Exists(thumbPath))
-                _generateThumbnails.Execute(jobContext.FileTranscoded, thumbPath);
+                _generateThumbnails.Execute(jobContext.FileTranscoded, thumbPath, thumbTimespan);
         }
 
         private void SaveMp4Video(EncodeJobContext jobContext, VideoMetadata metadata)
@@ -116,10 +154,7 @@ namespace OpenVid.Importer
             _repository.SaveVideoSource(videoSource);
 
             // Move the new file to the bucket
-            string vidSubFolder = md5.Substring(0, 2);
-            string videoDirectory = Path.Combine(_configuration.BucketDirectory, "video", vidSubFolder);
-            FileHelpers.TouchDirectory(videoDirectory);
-            string videoBucketDirectory = Path.Combine(videoDirectory, $"{md5}{jobContext.OutputExtension}");
+            var videoBucketDirectory = FileHelpers.FileDirPath(_configuration.BucketDirectory, md5, jobContext.OutputExtension);
             File.Copy(jobContext.FileTranscoded, videoBucketDirectory);
         }
 

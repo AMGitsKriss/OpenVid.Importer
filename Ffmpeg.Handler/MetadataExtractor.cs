@@ -12,6 +12,7 @@ namespace Ffmpeg.Handler
         {
             _logger = logger;
         }
+
         public async Task<IMediaInfo> Extract(string location)
         {
             _logger.Information("Finding MetaData for file {0}", Path.GetFileNameWithoutExtension(location));

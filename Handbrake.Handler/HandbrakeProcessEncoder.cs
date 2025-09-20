@@ -1,18 +1,25 @@
-﻿using Common.Entities;
+﻿using Common;
+using Common.Entities;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
-using System.Linq.Expressions;
 
 namespace Handbrake.Handler
 {
     public class HandbrakeProcessEncoder : IEncoder
     {
+        private readonly ComponentOptions _options;
+
+        public HandbrakeProcessEncoder(IOptions<ComponentOptions> options)
+        {
+            _options = options.Value;
+        }
         public async Task<bool> Execute(EncodeJobContext jobContext)
         {
             try
             {
                 Console.WriteLine("Converting file {0}", jobContext.InputFileName);
 
-                string exe = @"C:\handbrakecli\HandBrakeCLI.exe"; // TODO - [HandbrakeCLI] Should be configurable.What if I want to install this elsewhere?
+                string exe = _options.Handbrake; // TODO - [HandbrakeCLI] Should be configurable.What if I want to install this elsewhere?
                 double sixteenNineRatio = 1.77777;
 
                 int displayHeight = jobContext.QueueItem.MaxHeight;  // 1080p but actual video is 800

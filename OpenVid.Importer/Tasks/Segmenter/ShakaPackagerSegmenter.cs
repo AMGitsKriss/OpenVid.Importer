@@ -15,11 +15,13 @@ namespace CatalogManager.Segment
     public class ShakaPackagerSegmenter : ISegmenter
     {
         private readonly CatalogImportOptions _configuration;
+        private readonly ComponentOptions _components;
         private readonly ILogger _logger;
 
-        public ShakaPackagerSegmenter(IOptions<CatalogImportOptions> configuration, ILogger logger)
+        public ShakaPackagerSegmenter(IOptions<CatalogImportOptions> configuration, IOptions<ComponentOptions> components, ILogger logger)
         {
             _configuration = configuration.Value;
+            _components = components.Value;
             _logger = logger;
         }
 
@@ -27,7 +29,7 @@ namespace CatalogManager.Segment
         {
             var firstVideo = videosToSegment.First(i => i.ArgStream == "video");
             Console.WriteLine("Segmenting file {0}", Path.GetFileNameWithoutExtension(firstVideo.ArgInputFile));
-            var exe = @"c:\shaka-packager\packager.exe";
+            var exe = _components.ShakaPackager;
             var args = string.Empty;
 
             foreach (var video in videosToSegment)

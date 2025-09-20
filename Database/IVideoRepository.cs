@@ -14,7 +14,7 @@ namespace Database
         bool SaveEncodeJob(VideoEncodeQueue encodeJob);
         bool SaveSegmentJob(VideoSegmentQueue segmentJob);
         bool SaveSegmentItem(VideoSegmentQueueItem segmentJob);
-        bool IsFileStillNeeded(int videoId, int queueItemId);
+        bool IsSourceFileStillNeeded(int videoId, int queueItemId);
         void SetPendingSegmentingDone(int videoId);
         IQueryable<VideoSegmentQueue> GetSegmentJobsForVideo(int videoId);
         VideoSegmentQueue GetNextPendingSegment();

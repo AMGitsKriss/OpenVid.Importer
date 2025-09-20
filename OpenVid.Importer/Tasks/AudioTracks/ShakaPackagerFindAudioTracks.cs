@@ -1,5 +1,6 @@
 ﻿using Common;
 using Database.Models;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,6 +12,13 @@ namespace OpenVid.Importer.Tasks.AudioTracks
 {
     public class ShakaPackagerFindAudioTracks : IFindAudioTracks
     {
+        private readonly ComponentOptions _options;
+
+        public ShakaPackagerFindAudioTracks(IOptions<ComponentOptions> options)
+        {
+            _options = options.Value;
+        }
+
         public List<AudioTrack> Execute(VideoSegmentQueueItem video)
         {
             Console.WriteLine("Finding audio for file {0}", Path.GetFileNameWithoutExtension(video.ArgInputFile));
@@ -18,7 +26,7 @@ namespace OpenVid.Importer.Tasks.AudioTracks
 
             string cmd = $"in=\"{location}\" --dump_stream_info";
             Process proc = new Process();
-            proc.StartInfo.FileName = @"c:\shaka-packager\packager.exe";
+            proc.StartInfo.FileName = _options.ShakaPackager;
             proc.StartInfo.Arguments = cmd;
             proc.StartInfo.CreateNoWindow = true;
             proc.StartInfo.RedirectStandardOutput = true;

@@ -41,8 +41,16 @@ namespace OpenVid.Importer.Tasks.Ingest
 
             foreach (var pending in pendingFiles)
             {
+                if (pending.FileName == "Thumbs.db")
+                    continue;
+
                 // DATABASE
-                var videoId = await CreateVideoInDatabase(pending);
+                var mediaInfo = await _metadata.Extract(pending.FullName);
+                var metaData = _metadata.GetMetadata(mediaInfo);
+
+                var video = await CreateVideoInDatabase(pending, metaData);
+                var videoId = await QueueVideoEncodes(pending, mediaInfo, metaData, video);
+
                 if (videoId == 0)
                     continue;
 
@@ -103,12 +111,9 @@ namespace OpenVid.Importer.Tasks.Ingest
             }
         }
 
-        private async Task<int> CreateVideoInDatabase(ImportableVideo pending)
+        private async Task<Video> CreateVideoInDatabase(ImportableVideo pending, VideoMetadata metaData)
         {
             var tags = _repository.DefineTags(pending.SuggestedTags);
-
-            var mediaInfo = await _metadata.Extract(pending.FullName);
-            var metaData = _metadata.GetMetadata(mediaInfo);
 
             var toSave = new Video()
             {
@@ -124,6 +129,11 @@ namespace OpenVid.Importer.Tasks.Ingest
 
             toSave = _repository.SaveVideo(toSave);
 
+            return toSave;
+        }
+
+        private async Task<int> QueueVideoEncodes(ImportableVideo pending, IMediaInfo mediaInfo, VideoMetadata metaData, Video toSave)
+        {
             // If our source is 720p, don't bother trying to use the 1080p preset.
             var presets = await GetPresets(mediaInfo, pending.FullName);
 
@@ -145,6 +155,8 @@ namespace OpenVid.Importer.Tasks.Ingest
                     IsVertical = metaData.Height > metaData.Width
                 });
             }
+
+            // TODO - If I have a 720p Dash and a 720p mp4, I only need to encode once.
 
             if (presets.Any(p => p.PlaybackFormat == "dash"))
             {
@@ -224,17 +236,17 @@ namespace OpenVid.Importer.Tasks.Ingest
             var metadata = _metadata.GetMetadata(mediaInfo);
 
             // 1080p ultrawide is usually more like 800p with a 1920 width. This way we'll pretend it has black bars so we get the width consistent
-            int heightIfSizteenNine = (int)Math.Ceiling(metadata.Width * 0.5625d);
+            int heightIfSixteenNine = (int)Math.Ceiling(metadata.Width * 0.5625d);
 
             // Find MP4 Presets
-            var mp4Presets = _configuration.EncoderPresets.Where(v => v.MaxHeight <= heightIfSizteenNine && v.PlaybackFormat == "mp4").ToList();
+            var mp4Presets = _configuration.EncoderPresets.Where(v => v.MaxHeight <= heightIfSixteenNine && v.PlaybackFormat == "mp4").ToList(); // skip bigger presets
             var smallestmp4Preset = _configuration.EncoderPresets.Where(v => v.PlaybackFormat == "mp4").OrderBy(v => v.MaxHeight).FirstOrDefault();
 
             // Find MPD PResets
-            var mpdPresets = _configuration.EncoderPresets.Where(v => v.MaxHeight <= heightIfSizteenNine && v.PlaybackFormat == "dash").ToList();
+            var mpdPresets = _configuration.EncoderPresets.Where(v => v.MaxHeight <= heightIfSixteenNine && v.PlaybackFormat == "dash").ToList();
             var smallestmpdPreset = _configuration.EncoderPresets.Where(v => v.PlaybackFormat == "dash").OrderBy(v => v.MaxHeight).FirstOrDefault();
 
-            // Set MP4
+            // If the video is smaller than all of the given presets
             if (!mp4Presets.Any() && smallestmp4Preset != null)
             {
                 if (mpdPresets.Any() && smallestmp4Preset.MaxHeight > mpdPresets.Select(m => m.MaxHeight).Max())
